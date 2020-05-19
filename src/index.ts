@@ -117,6 +117,11 @@ export async function findAndCountAll<T extends Model<T>>(entity: ModelType<T>, 
   return entity.findAndCountAll(await getFindOptions(entity, args, fieldNode));
 }
 
+export async function findAll<T extends Model<T>>(entity: ModelType<T>, args: any, info): Promise<T[]> {
+  const fieldNode = info.fieldNodes[0];
+  return entity.findAll(await getFindOptions(entity, args, fieldNode));
+}
+
 export async function getFindOptionsForNested<P extends Model<P>, T extends Model<T>>(
   parentEntityIds: number[],
   parentEntity: ModelType<P>,
