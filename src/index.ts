@@ -7,6 +7,7 @@ import {
   Op,
   fn,
   where as whereFn,
+  literal,
 } from 'sequelize';
 import { FnContainer } from './decorators/fn-container';
 import { getArgumentValue } from './helpers/column-helper';
@@ -133,7 +134,10 @@ export async function getFindOptionsForNested<P extends Model<P>, T extends Mode
   options.attributes = [];
   options.where = { id: { [Op.in]: parentEntityIds } };
   options.subQuery = false;
-  options.order = fn('field', `\`${parentEntity.options.name.singular}\`.\`id\``, parentEntityIds);
+  options.order = literal(`FIELD(\`${parentEntity.options.name.singular}\`.\`id\`, :parentEntityIds)`);
+  options.replacements = {
+    parentEntityIds
+  }
   const includeOptions = {
     model: entity,
     as: Object.values(parentEntity.associations).find(x => x.target === entity).as,
