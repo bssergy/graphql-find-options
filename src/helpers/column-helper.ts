@@ -30,7 +30,7 @@ export function getArgumentValue(argValue: PlainWhere): WhereValue {
   if (typeof argValue === 'object' && !(argValue instanceof Date) && argValue.constructor?.name !== 'Array') {
     const values: WhereOperators[] = Object.keys(argValue).map(operation => {
       const value: PlainWhere = argValue[operation];
-      if (typeof value === 'object' && value.constructor?.name === 'Array') {
+      if (typeof value === 'object' && value?.constructor?.name === 'Array') {
         return {
           [Op[operation]]: (value as PlainWhere[]).map((x: PlainWhere) => getArgumentValue(x)),
         };
