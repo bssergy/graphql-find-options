@@ -5,24 +5,25 @@ import {
   LogicType,
   Model,
   Op,
-  fn,
   where as whereFn,
   literal,
 } from 'sequelize';
 import { FnContainer } from './decorators/fn-container';
-import { getArgumentValue } from './helpers/column-helper';
+import { getArgumentValue, getParentAs } from './helpers/column-helper';
 import { ModelType } from './models/model-type';
 
-async function getOrderOptions(entity, order, orderOptions = [], as = null) {
+async function getOrderOptions(entity, order, orderOptions = [], orderItemModels = [], as?: string, parentAs?: string) {
+  if (as) {
+    orderItemModels.push({ model: entity, as });
+  }
   for (const field of Object.keys(order)) {
     const argFn = FnContainer.getArgFunc(order.constructor, field);
     const orderItem =
-      (argFn && (await argFn(as || entity.options.name.singular))) ||
-      (Object.keys(entity.rawAttributes).includes(field) && field);
+      (argFn && (await argFn(as, parentAs))) || (Object.keys(entity.rawAttributes).includes(field) && field);
     if (orderItem) {
-      const orderItemOptions = [];
+      let orderItemOptions = [];
       if (as && !argFn) {
-        orderItemOptions.push({ model: entity, as });
+        orderItemOptions = [...orderItemModels];
       }
       orderItemOptions.push(orderItem);
       orderItemOptions.push(order[field]);
@@ -39,13 +40,20 @@ async function getOrderOptions(entity, order, orderOptions = [], as = null) {
 
     const model = entity.associations[association].target;
 
-    getOrderOptions(model, associationArgs, orderOptions, entity.associations[association].as);
+    getOrderOptions(
+      model,
+      associationArgs,
+      orderOptions,
+      orderItemModels,
+      entity.associations[association].as,
+      getParentAs(as, parentAs),
+    );
   }
 
   return orderOptions;
 }
 
-function getOptions(selections, entity, args, includeOptions) {
+function getOptions(selections, entity, args, includeOptions?, parentAs?: string) {
   const attributes = selections
     ?.filter(selection => Object.keys(entity.rawAttributes).includes(selection.name.value))
     .map(selection => selection.name.value);
@@ -58,7 +66,7 @@ function getOptions(selections, entity, args, includeOptions) {
         if (!where[Op.and]) {
           where[Op.and] = [];
         }
-        where[Op.and].push(whereFn(argFn(includeOptions.as), getArgumentValue(args[argName]) as LogicType));
+        where[Op.and].push(whereFn(argFn(includeOptions?.as, parentAs), getArgumentValue(args[argName]) as LogicType));
       } else if (argName in entity.rawAttributes) {
         where[argName] = getArgumentValue(args[argName]);
       }
@@ -84,7 +92,15 @@ function getOptions(selections, entity, args, includeOptions) {
       required: !!associationArgs,
       as: entity.associations[association].as,
     };
-    include.push(getOptions(selection?.selectionSet.selections, model, associationArgs, assosiationInclude));
+    include.push(
+      getOptions(
+        selection?.selectionSet.selections,
+        model,
+        associationArgs,
+        assosiationInclude,
+        getParentAs(includeOptions?.as, parentAs),
+      ),
+    );
   }
 
   const options: IncludeOptions = includeOptions || {};
@@ -95,8 +111,12 @@ function getOptions(selections, entity, args, includeOptions) {
   return options;
 }
 
-export async function getFindOptions<T extends Model<T>>(entity: ModelType<T>, args: any, fieldNode): Promise<FindOptions> {
-  const options: FindAndCountOptions = getOptions(fieldNode.selectionSet.selections, entity, args.where, { as: entity.options.name.singular });
+export async function getFindOptions<T extends Model<T>>(
+  entity: ModelType<T>,
+  args: any,
+  fieldNode,
+): Promise<FindOptions> {
+  const options: FindAndCountOptions = getOptions(fieldNode.selectionSet.selections, entity, args.where);
   options.limit = args.limit;
   options.offset = args.offset;
   options.subQuery = false;
@@ -110,7 +130,11 @@ export async function getFindOptions<T extends Model<T>>(entity: ModelType<T>, a
   return options;
 }
 
-export async function findAndCountAll<T extends Model<T>>(entity: ModelType<T>, args: any, info): Promise<{
+export async function findAndCountAll<T extends Model<T>>(
+  entity: ModelType<T>,
+  args: any,
+  info,
+): Promise<{
   rows: (T & Model<unknown, unknown>)[];
   count: number;
 }> {
@@ -134,10 +158,10 @@ export async function getFindOptionsForNested<P extends Model<P>, T extends Mode
   options.attributes = [];
   options.where = { id: { [Op.in]: parentEntityIds } };
   options.subQuery = false;
-  options.order = literal(`FIELD(\`${parentEntity.options.name.singular}\`.\`id\`, :parentEntityIds)`);
+  options.order = literal(`FIELD(\`${parentEntity.name}\`.\`id\`, :parentEntityIds)`);
   options.replacements = {
-    parentEntityIds
-  }
+    parentEntityIds,
+  };
   const includeOptions = {
     model: entity,
     as: Object.values(parentEntity.associations).find(x => x.target === entity).as,

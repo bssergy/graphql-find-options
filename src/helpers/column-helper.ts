@@ -3,24 +3,46 @@ import { Col } from 'sequelize/types/lib/utils';
 import { ModelType } from '../models/model-type';
 import { PlainWhere } from '../models/plain-where';
 
+export function getAs<T extends Model<T>>(entity: ModelType<T>, as?: string, parentAs?: string): string {
+  return as && parentAs ? `${parentAs}->${as}` : as ? as : entity.name;
+}
+
+export function getParentAs(as?: string, parentAs?: string): string {
+  return as && parentAs ? `${parentAs}->${as}` : as ? as : null;
+}
+
+function getFieldData<T extends Model<T>>(entity: ModelType<T>, as?: string, parentAs?: string, i = 0): any {
+  const fieldData: any = {};
+  for (const attributeName of Object.keys(entity.rawAttributes)) {
+    const attribute = entity.rawAttributes[attributeName];
+    fieldData[attributeName] = `${getAs(entity, as, parentAs)}.${attribute.field}`;
+  }
+  if (i > 5) {
+    return fieldData;
+  }
+  for (const associationName of Object.keys(entity.associations)) {
+    const association = entity.associations[associationName];
+    fieldData[associationName] = getFieldData(association.target, association.as, as, ++i);
+  }
+  return fieldData;
+}
+
 export function getColumnName<T extends Model<T>>(
   entity: ModelType<T>,
   field: (object: T) => any,
-  alias: string = null,
+  as?: string,
+  parentAs?: string,
 ): string {
-  let columnName: string = field(entity.rawAttributes as any).field;
-  if (alias) {
-    columnName = `${alias}.${columnName}`;
-  }
-  return columnName;
+  return field(getFieldData(entity, as, parentAs));
 }
 
 export function getColumn<T extends Model<T>>(
   entity: ModelType<T>,
   field: (object: T) => any,
-  alias: string = null,
+  as?: string,
+  parentAs?: string,
 ): Col {
-  return col(getColumnName(entity, field, alias));
+  return col(getColumnName(entity, field, as, parentAs));
 }
 
 export function getArgumentValue(argValue: PlainWhere): WhereValue {
