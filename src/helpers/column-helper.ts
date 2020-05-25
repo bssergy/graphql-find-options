@@ -17,12 +17,12 @@ function getFieldData<T extends Model<T>>(entity: ModelType<T>, as?: string, par
     const attribute = entity.rawAttributes[attributeName];
     fieldData[attributeName] = `${getAs(entity, as, parentAs)}.${attribute.field}`;
   }
-  if (i > 5) {
+  if (++i > 5) {
     return fieldData;
   }
   for (const associationName of Object.keys(entity.associations)) {
     const association = entity.associations[associationName];
-    fieldData[associationName] = getFieldData(association.target, association.as, as, ++i);
+    fieldData[associationName] = getFieldData(association.target, association.as, as, i);
   }
   return fieldData;
 }
