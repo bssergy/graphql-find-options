@@ -15,7 +15,7 @@ function getFieldData<T extends Model<T>>(entity: ModelType<T>, as?: string, par
   const fieldData: any = {};
   for (const attributeName of Object.keys(entity.rawAttributes)) {
     const attribute = entity.rawAttributes[attributeName];
-    fieldData[attributeName] = `${getAs(entity, as, parentAs)}.${attribute.field}`;
+    fieldData[attributeName] = `\`${getAs(entity, as, parentAs)}\`.\`${attribute.field}\``;
   }
   if (++i > 5) {
     return fieldData;

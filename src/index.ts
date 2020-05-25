@@ -11,6 +11,7 @@ import {
 import { FnContainer } from './decorators/fn-container';
 import { getArgumentValue, getParentAs } from './helpers/column-helper';
 import { ModelType } from './models/model-type';
+import { WhereContainer } from './decorators/where-container';
 
 async function getOrderOptions(entity, order, orderOptions = [], orderItemModels = [], as?: string, parentAs?: string) {
   if (as) {
@@ -67,8 +68,17 @@ function getOptions(selections, entity, args, includeOptions?, parentAs?: string
           where[Op.and] = [];
         }
         where[Op.and].push(whereFn(argFn(includeOptions?.as, parentAs), getArgumentValue(args[argName]) as LogicType));
-      } else if (argName in entity.rawAttributes) {
-        where[argName] = getArgumentValue(args[argName]);
+      } else {
+        const whereArg = WhereContainer.getArgFunc(args.constructor, argName);
+        if (whereArg) {
+          if (!where[Op.and]) {
+            where[Op.and] = [];
+          }
+
+          where[Op.and].push(whereArg(args[argName], includeOptions?.as, parentAs));
+        } else if (argName in entity.rawAttributes) {
+          where[argName] = getArgumentValue(args[argName]);
+        }
       }
     }
   }
