@@ -57,7 +57,7 @@ async function getOrderOptions(entity, order, orderOptions = [], orderItemModels
 function getOptions(selections, entity, args, includeOptions?, parentAs?: string) {
   const attributes = selections
     ?.filter(selection => Object.keys(entity.rawAttributes).includes(selection.name.value))
-    .map(selection => selection.name.value);
+    .map(selection => selection.name.value) || ['id'];
 
   const where = {};
   if (args) {
