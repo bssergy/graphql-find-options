@@ -9,7 +9,7 @@ import {
   literal,
 } from 'sequelize';
 import { FnContainer } from './decorators/fn-container';
-import { getArgumentValue, getParentAs } from './helpers/column-helper';
+import { getArgumentValue, getParentAs, getColumnName } from './helpers/column-helper';
 import { ModelType } from './models/model-type';
 import { WhereContainer } from './decorators/where-container';
 
@@ -129,6 +129,7 @@ export async function getFindOptions<T extends Model<T>>(
   entity: ModelType<T>,
   args: any,
   fieldNode,
+  customOptions?,
 ): Promise<FindOptions> {
   const options: FindAndCountOptions = getOptions(fieldNode.selectionSet.selections, entity, args.where);
   options.limit = args.limit;
@@ -141,6 +142,10 @@ export async function getFindOptions<T extends Model<T>>(
     }
   }
   options.order = order;
+  if (customOptions?.distinct) {
+    const columnName = getColumnName(entity, entity => entity[options.attributes[0]]);
+    options.attributes[0] = [literal(`DISTINCT(${columnName})`), options.attributes[0]];
+  }
   return options;
 }
 
@@ -148,17 +153,18 @@ export async function findAndCountAll<T extends Model<T>>(
   entity: ModelType<T>,
   args: any,
   info,
+  customOptions?,
 ): Promise<{
   rows: (T & Model<unknown, unknown>)[];
   count: number;
 }> {
   const fieldNode = info.fieldNodes[0].selectionSet.selections[0];
-  return entity.findAndCountAll(await getFindOptions(entity, args, fieldNode));
+  return entity.findAndCountAll(await getFindOptions(entity, args, fieldNode, customOptions));
 }
 
-export async function findAll<T extends Model<T>>(entity: ModelType<T>, args: any, info): Promise<T[]> {
+export async function findAll<T extends Model<T>>(entity: ModelType<T>, args: any, info, customOptions?,): Promise<T[]> {
   const fieldNode = info.fieldNodes[0];
-  return entity.findAll(await getFindOptions(entity, args, fieldNode));
+  return entity.findAll(await getFindOptions(entity, args, fieldNode, customOptions));
 }
 
 export async function findOne<T extends Model<T>>(entity: ModelType<T>, args: any, info): Promise<T | null> {
