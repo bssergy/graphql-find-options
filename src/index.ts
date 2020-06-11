@@ -63,12 +63,6 @@ function getOptions(selections, entity, args, includeOptions?, parentAs?: string
       attributes = [];
     }
   
-    // for (const primaryKey of Object.keys(entity.primaryKeys)) {
-    //   if (attributes.indexOf(primaryKey) < 0) {
-    //     attributes.push(primaryKey);
-    //   }
-    // }
-  
     if (group) {
       attributes.forEach(x => {
         const columnName = getColumnName(entity, y => y[x], includeOptions?.as, parentAs);
@@ -160,6 +154,7 @@ export async function getFindOptions<T extends Model<T>>(
   options.offset = args.offset;
   options.subQuery = false;
   options.group = group;
+  options.raw = true;
   const order = [];
   if (args.order && args.order.length) {
     for (const orderItem of args.order) {
