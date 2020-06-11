@@ -154,7 +154,7 @@ export async function getFindOptions<T extends Model<T>>(
   options.offset = args.offset;
   options.subQuery = false;
   options.group = group;
-  options.raw = true;
+  options.raw = !!group;
   const order = [];
   if (args.order && args.order.length) {
     for (const orderItem of args.order) {
