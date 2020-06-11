@@ -1,6 +1,6 @@
 {
   "name": "graphql-find-options",
-  "version": "1.0.19",
+  "version": "1.0.20",
   "description": "Builds find options for Sequelize based on GraphQL query",
   "main": "lib/index.js",
   "scripts": {
