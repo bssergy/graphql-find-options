@@ -54,14 +54,29 @@ async function getOrderOptions(entity, order, orderOptions = [], orderItemModels
   return orderOptions;
 }
 
-function getOptions(selections, entity, args, includeOptions?, parentAs?: string) {
+function getOptions(selections, entity, args, includeOptions?, parentAs?: string, group?: string[]) {
   let attributes = selections
     ?.filter(selection => Object.keys(entity.rawAttributes).includes(selection.name.value))
     .map(selection => selection.name.value);
   
-  if (!attributes || !attributes.length) {
-    attributes = ['id'];
-  }
+    if (!attributes) {
+      attributes = [];
+    }
+  
+    for (const primaryKey of Object.keys(entity.primaryKeys)) {
+      if (attributes.indexOf(primaryKey) < 0) {
+        attributes.push(primaryKey);
+      }
+    }
+  
+    if (group) {
+      attributes.forEach(x => {
+        const columnName = getColumnName(entity, y => y[x], includeOptions?.as, parentAs);
+        if (group.indexOf(columnName) < 0) {
+          group.push(columnName);
+        }
+      });
+    }
 
   const where = {};
   if (args) {
@@ -131,10 +146,19 @@ export async function getFindOptions<T extends Model<T>>(
   fieldNode,
   customOptions?,
 ): Promise<FindOptions> {
-  const options: FindAndCountOptions = getOptions(fieldNode.selectionSet.selections, entity, args.where);
+  const group = customOptions?.group;
+  const options: FindAndCountOptions = getOptions(
+    fieldNode.selectionSet.selections,
+    entity,
+    args.where,
+    null,
+    null,
+    group,
+  );
   options.limit = args.limit;
   options.offset = args.offset;
   options.subQuery = false;
+  options.group = group;
   const order = [];
   if (args.order && args.order.length) {
     for (const orderItem of args.order) {
