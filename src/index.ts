@@ -63,11 +63,11 @@ function getOptions(selections, entity, args, includeOptions?, parentAs?: string
       attributes = [];
     }
   
-    for (const primaryKey of Object.keys(entity.primaryKeys)) {
-      if (attributes.indexOf(primaryKey) < 0) {
-        attributes.push(primaryKey);
-      }
-    }
+    // for (const primaryKey of Object.keys(entity.primaryKeys)) {
+    //   if (attributes.indexOf(primaryKey) < 0) {
+    //     attributes.push(primaryKey);
+    //   }
+    // }
   
     if (group) {
       attributes.forEach(x => {
