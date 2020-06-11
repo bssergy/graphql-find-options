@@ -128,6 +128,7 @@ function getOptions(selections, entity, args, includeOptions?, parentAs?: string
         associationArgs,
         assosiationInclude,
         getParentAs(includeOptions?.as, parentAs),
+        group
       ),
     );
   }
