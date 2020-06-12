@@ -54,23 +54,14 @@ async function getOrderOptions(entity, order, orderOptions = [], orderItemModels
   return orderOptions;
 }
 
-function getOptions(selections, entity, args, includeOptions?, parentAs?: string, group?: string[]) {
+function getOptions(selections, entity, args, includeOptions?, parentAs?: string) {
   let attributes = selections
     ?.filter(selection => Object.keys(entity.rawAttributes).includes(selection.name.value))
     .map(selection => selection.name.value);
-  
-    if (!attributes) {
-      attributes = [];
-    }
-  
-    if (group) {
-      attributes.forEach(x => {
-        const columnName = getColumnName(entity, y => y[x], includeOptions?.as, parentAs);
-        if (group.indexOf(columnName) < 0) {
-          group.push(columnName);
-        }
-      });
-    }
+
+  if (!attributes) {
+    attributes = [];
+  }
 
   const where = {};
   if (args) {
@@ -122,7 +113,6 @@ function getOptions(selections, entity, args, includeOptions?, parentAs?: string
         associationArgs,
         assosiationInclude,
         getParentAs(includeOptions?.as, parentAs),
-        group
       ),
     );
   }
@@ -141,20 +131,12 @@ export async function getFindOptions<T extends Model<T>>(
   fieldNode,
   customOptions?,
 ): Promise<FindOptions> {
-  const group = customOptions?.group;
-  const options: FindAndCountOptions = getOptions(
-    fieldNode.selectionSet.selections,
-    entity,
-    args.where,
-    null,
-    null,
-    group,
-  );
+  const options: FindAndCountOptions = getOptions(fieldNode.selectionSet.selections, entity, args.where, null, null);
   options.limit = args.limit;
   options.offset = args.offset;
   options.subQuery = false;
-  options.group = group;
-  options.raw = !!group;
+  options.group = customOptions?.group;
+  options.raw = !!(customOptions?.group || customOptions?.distinct);
   const order = [];
   if (args.order && args.order.length) {
     for (const orderItem of args.order) {
@@ -182,7 +164,7 @@ export async function findAndCountAll<T extends Model<T>>(
   return entity.findAndCountAll(await getFindOptions(entity, args, fieldNode, customOptions));
 }
 
-export async function findAll<T extends Model<T>>(entity: ModelType<T>, args: any, info, customOptions?,): Promise<T[]> {
+export async function findAll<T extends Model<T>>(entity: ModelType<T>, args: any, info, customOptions?): Promise<T[]> {
   const fieldNode = info.fieldNodes[0];
   return entity.findAll(await getFindOptions(entity, args, fieldNode, customOptions));
 }
