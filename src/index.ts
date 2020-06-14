@@ -54,13 +54,21 @@ async function getOrderOptions(entity, order, orderOptions = [], orderItemModels
   return orderOptions;
 }
 
-function getOptions(selections, entity, args, includeOptions?, parentAs?: string) {
+function getOptions(selections, entity, args, includeOptions?, parentAs?: string, isRaw: boolean = false) {
   let attributes = selections
     ?.filter(selection => Object.keys(entity.rawAttributes).includes(selection.name.value))
     .map(selection => selection.name.value);
 
   if (!attributes) {
     attributes = [];
+  }
+
+  if (!isRaw) {
+    for (const primaryKey of Object.keys(entity.primaryKeys)) {
+      if (attributes.indexOf(primaryKey) < 0) {
+        attributes.push(primaryKey);
+      }
+    }
   }
 
   const where = {};
@@ -113,6 +121,7 @@ function getOptions(selections, entity, args, includeOptions?, parentAs?: string
         associationArgs,
         assosiationInclude,
         getParentAs(includeOptions?.as, parentAs),
+        isRaw,
       ),
     );
   }
@@ -131,12 +140,13 @@ export async function getFindOptions<T extends Model<T>>(
   fieldNode,
   customOptions?,
 ): Promise<FindOptions> {
-  const options: FindAndCountOptions = getOptions(fieldNode.selectionSet.selections, entity, args.where, null, null);
+  const isRaw: boolean = !!(customOptions?.group || customOptions?.distinct);
+  const options: FindAndCountOptions = getOptions(fieldNode.selectionSet.selections, entity, args.where, null, null, isRaw);
   options.limit = args.limit;
   options.offset = args.offset;
   options.subQuery = false;
   options.group = customOptions?.group;
-  options.raw = !!(customOptions?.group || customOptions?.distinct);
+  options.raw = isRaw;
   const order = [];
   if (args.order && args.order.length) {
     for (const orderItem of args.order) {
