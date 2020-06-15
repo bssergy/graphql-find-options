@@ -54,7 +54,7 @@ async function getOrderOptions(entity, order, orderOptions = [], orderItemModels
   return orderOptions;
 }
 
-function getOptions(selections, entity, args, includeOptions?, parentAs?: string, isRaw: boolean = false) {
+function getOptions(selections, entity, args, includeOptions?, parentAs?: string, isRaw = false) {
   let attributes = selections
     ?.filter(selection => Object.keys(entity.rawAttributes).includes(selection.name.value))
     .map(selection => selection.name.value);
@@ -140,8 +140,15 @@ export async function getFindOptions<T extends Model<T>>(
   fieldNode,
   customOptions?,
 ): Promise<FindOptions> {
-  const isRaw: boolean = !!(customOptions?.group || customOptions?.distinct);
-  const options: FindAndCountOptions = getOptions(fieldNode.selectionSet.selections, entity, args.where, null, null, isRaw);
+  const isRaw = !!(customOptions?.group || customOptions?.distinct);
+  const options: FindAndCountOptions = getOptions(
+    fieldNode.selectionSet.selections,
+    entity,
+    args.where,
+    null,
+    null,
+    isRaw,
+  );
   options.limit = args.limit;
   options.offset = args.offset;
   options.subQuery = false;
@@ -192,13 +199,9 @@ export async function getFindOptionsForNested<P extends Model<P>, T extends Mode
   fieldNode,
 ): Promise<FindOptions> {
   const options: FindOptions = {};
-  options.attributes = [];
+  options.attributes = ['id'];
   options.where = { id: { [Op.in]: parentEntityIds } };
   options.subQuery = false;
-  options.order = literal(`FIELD(\`${parentEntity.name}\`.\`id\`, :parentEntityIds)`);
-  options.replacements = {
-    parentEntityIds,
-  };
   const includeOptions = {
     model: entity,
     as: Object.values(parentEntity.associations).find(x => x.target === entity).as,
@@ -219,5 +222,5 @@ export async function findAllWithNested<P extends Model<P>, T extends Model<T>>(
   const as = Object.values(parentEntity.associations).find(x => x.target === entity).as;
   return parentEntity
     .findAll(await getFindOptionsForNested(parentEntityIds, parentEntity, entity, args, fieldNode))
-    .then(result => parentEntityIds.map(x => result.find(y => y.id === x)[as]));
+    .then(result => parentEntityIds.map(x => result.find(y => y.get('id') === x)[as]));
 }
