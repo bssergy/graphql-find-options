@@ -219,5 +219,5 @@ export async function findAllWithNested<P extends Model<P>, T extends Model<T>>(
   const as = Object.values(parentEntity.associations).find(x => x.target === entity).as;
   return parentEntity
     .findAll(await getFindOptionsForNested(parentEntityIds, parentEntity, entity, args, fieldNode))
-    .then(result => result.map(x => x[as]));
+    .then(result => parentEntityIds.map(x => result.find(y => y.id === x)));
 }
