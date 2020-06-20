@@ -54,13 +54,19 @@ async function getOrderOptions(entity, order, orderOptions = [], orderItemModels
   return orderOptions;
 }
 
-function getOptions(selections, entity, args, includeOptions?, parentAs?: string, isRaw = false) {
+function getOptions(selections, entity, args, includeOptions?, parentAs?: string, isRaw = false, distinctObj?) {
   let attributes = selections
     ?.filter(selection => Object.keys(entity.rawAttributes).includes(selection.name.value))
     .map(selection => selection.name.value);
 
   if (!attributes) {
     attributes = [];
+  }
+
+  if (distinctObj?.distinct && attributes.length) {
+    const columnName = getColumnName(entity, entity => entity[attributes[0]], includeOptions?.as, parentAs);
+    attributes[0] = [literal(`DISTINCT(${columnName})`), attributes[0]];
+    distinctObj.distinct = false;
   }
 
   if (!isRaw) {
@@ -110,7 +116,7 @@ function getOptions(selections, entity, args, includeOptions?, parentAs?: string
     }
 
     const assosiationInclude = {
-      model,
+      model: model,
       required: !!associationArgs,
       as: entity.associations[association].as,
     };
@@ -122,6 +128,7 @@ function getOptions(selections, entity, args, includeOptions?, parentAs?: string
         assosiationInclude,
         getParentAs(includeOptions?.as, parentAs),
         isRaw,
+        distinctObj,
       ),
     );
   }
@@ -148,12 +155,14 @@ export async function getFindOptions<T extends Model<T>>(
     null,
     null,
     isRaw,
+    { distinct: customOptions?.distinct },
   );
   options.limit = args.limit;
   options.offset = args.offset;
   options.subQuery = false;
   options.group = customOptions?.group;
   options.raw = isRaw;
+  options.mapToModel = isRaw;
   const order = [];
   if (args.order && args.order.length) {
     for (const orderItem of args.order) {
@@ -161,10 +170,6 @@ export async function getFindOptions<T extends Model<T>>(
     }
   }
   options.order = order;
-  if (customOptions?.distinct) {
-    const columnName = getColumnName(entity, entity => entity[options.attributes[0]]);
-    options.attributes[0] = [literal(`DISTINCT(${columnName})`), options.attributes[0]];
-  }
   return options;
 }
 
