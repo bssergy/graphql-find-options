@@ -145,9 +145,8 @@ export async function getFindOptions<T extends Model<T>>(
   entity: ModelType<T>,
   args: any,
   fieldNode,
-  customOptions?,
 ): Promise<FindOptions> {
-  const isRaw = !!(customOptions?.group || customOptions?.distinct);
+  const isRaw = !!(args?.group || args?.distinct);
   const options: FindAndCountOptions = getOptions(
     fieldNode.selectionSet.selections,
     entity,
@@ -155,12 +154,12 @@ export async function getFindOptions<T extends Model<T>>(
     null,
     null,
     isRaw,
-    { distinct: customOptions?.distinct },
+    { distinct: args?.distinct },
   );
   options.limit = args.limit;
   options.offset = args.offset;
   options.subQuery = false;
-  options.group = customOptions?.group;
+  options.group = args?.group;
   options.raw = isRaw;
   options.mapToModel = isRaw;
   const order = [];
@@ -177,18 +176,17 @@ export async function findAndCountAll<T extends Model<T>>(
   entity: ModelType<T>,
   args: any,
   info,
-  customOptions?,
 ): Promise<{
   rows: (T & Model<unknown, unknown>)[];
   count: number;
 }> {
   const fieldNode = info.fieldNodes[0].selectionSet.selections[0];
-  return entity.findAndCountAll(await getFindOptions(entity, args, fieldNode, customOptions));
+  return entity.findAndCountAll(await getFindOptions(entity, args, fieldNode));
 }
 
-export async function findAll<T extends Model<T>>(entity: ModelType<T>, args: any, info, customOptions?): Promise<T[]> {
+export async function findAll<T extends Model<T>>(entity: ModelType<T>, args: any, info): Promise<T[]> {
   const fieldNode = info.fieldNodes[0];
-  return entity.findAll(await getFindOptions(entity, args, fieldNode, customOptions));
+  return entity.findAll(await getFindOptions(entity, args, fieldNode));
 }
 
 export async function findOne<T extends Model<T>>(entity: ModelType<T>, args: any, info): Promise<T | null> {
