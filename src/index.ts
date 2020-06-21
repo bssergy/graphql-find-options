@@ -54,7 +54,16 @@ async function getOrderOptions(entity, order, orderOptions = [], orderItemModels
   return orderOptions;
 }
 
-function getOptions(selections, entity, args, includeOptions?, parentAs?: string, isRaw = false, distinctObj?) {
+function getOptions(
+  selections,
+  entity,
+  args,
+  includeOptions?,
+  parentAs?: string,
+  isRaw = false,
+  distinctObj?,
+  hasThrough?,
+) {
   let attributes = selections
     ?.filter(selection => Object.keys(entity.rawAttributes).includes(selection.name.value))
     .map(selection => selection.name.value);
@@ -129,6 +138,7 @@ function getOptions(selections, entity, args, includeOptions?, parentAs?: string
         getParentAs(includeOptions?.as, parentAs),
         isRaw,
         distinctObj,
+        !!entity.associations[association].options.through,
       ),
     );
   }
@@ -137,6 +147,10 @@ function getOptions(selections, entity, args, includeOptions?, parentAs?: string
   options.attributes = attributes;
   options.where = where;
   options.include = include;
+
+  if (hasThrough) {
+    options.through = { attributes: [] };
+  }
 
   return options;
 }
