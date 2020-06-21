@@ -162,6 +162,7 @@ export async function getFindOptions<T extends Model<T>>(
   options.group = args?.groupBy;
   options.raw = isRaw;
   options.mapToModel = isRaw;
+  options.nest = isRaw;
   const order = [];
   if (args.order && args.order.length) {
     for (const orderItem of args.order) {
