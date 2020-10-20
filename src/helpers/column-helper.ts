@@ -11,18 +11,23 @@ export function getParentAs(as?: string, parentAs?: string): string {
   return as && parentAs ? `${parentAs}->${as}` : as ? as : null;
 }
 
-function getFieldData<T extends Model<T>>(entity: ModelType<T>, as?: string, parentAs?: string, i = 0): any {
+function getFieldData<T extends Model<T>>(entity: ModelType<T>, as?: string, parentAs?: string): any {
   const fieldData: any = {};
   for (const attributeName of Object.keys(entity.rawAttributes)) {
     const attribute = entity.rawAttributes[attributeName];
     fieldData[attributeName] = `\`${getAs(entity, as, parentAs)}\`.\`${attribute.field}\``;
   }
-  if (++i > 5) {
-    return fieldData;
-  }
   for (const associationName of Object.keys(entity.associations)) {
     const association = entity.associations[associationName];
-    fieldData[associationName] = getFieldData(association.target, association.as, as, i);
+    (() => {
+      var associationTarget = association.target;
+      var associationAs = association.as;
+      Object.defineProperty(fieldData, associationName, {
+          get: function() {
+              return getFieldData(associationTarget, associationAs, as);
+          }
+      });
+    })();
   }
   return fieldData;
 }
