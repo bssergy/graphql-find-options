@@ -223,7 +223,7 @@ export async function getFindOptionsForNested<P extends Model<P>, T extends Mode
   const includeOptions = {
     model: entity,
     as: Object.values(parentEntity.associations).find(x => x.target === entity).as,
-    required: false,
+    required: true,
   };
   options.include = [getOptions(fieldNode.selectionSet.selections, entity, args, includeOptions)];
   return options;
@@ -240,5 +240,5 @@ export async function findAllWithNested<P extends Model<P>, T extends Model<T>>(
   const as = Object.values(parentEntity.associations).find(x => x.target === entity).as;
   return parentEntity
     .findAll(await getFindOptionsForNested(parentEntityIds, parentEntity, entity, args, fieldNode))
-    .then(result => parentEntityIds.map(x => result.find(y => y.get('id') === x)[as]));
+    .then(result => parentEntityIds.map(x => (result.find(y => y.get('id') === x) || { [as]: [] })[as]));
 }
