@@ -63,25 +63,29 @@ function getOptions(
   isRaw = false,
   distinctObj?,
   hasThrough?,
+  isCountQuery = false,
 ) {
-  let attributes = selections
-    ?.filter(selection => Object.keys(entity.rawAttributes).includes(selection.name.value))
-    .map(selection => selection.name.value);
+  let attributes;
+  if (!isCountQuery) {
+    attributes = selections
+      ?.filter(selection => Object.keys(entity.rawAttributes).includes(selection.name.value))
+      .map(selection => selection.name.value);
 
-  if (!attributes) {
-    attributes = [];
-  }
+    if (!attributes) {
+      attributes = [];
+    }
 
-  if (distinctObj?.distinct && attributes.length) {
-    const columnName = getColumnName(entity, entity => entity[attributes[0]], includeOptions?.as, parentAs);
-    attributes[0] = [literal(`DISTINCT(${columnName})`), attributes[0]];
-    distinctObj.distinct = false;
-  }
+    if (distinctObj?.distinct && attributes.length) {
+      const columnName = getColumnName(entity, entity => entity[attributes[0]], includeOptions?.as, parentAs);
+      attributes[0] = [literal(`DISTINCT(${columnName})`), attributes[0]];
+      distinctObj.distinct = false;
+    }
 
-  if (!isRaw) {
-    for (const primaryKey of Object.keys(entity.primaryKeys)) {
-      if (attributes.indexOf(primaryKey) < 0) {
-        attributes.push(primaryKey);
+    if (!isRaw) {
+      for (const primaryKey of Object.keys(entity.primaryKeys)) {
+        if (attributes.indexOf(primaryKey) < 0) {
+          attributes.push(primaryKey);
+        }
       }
     }
   }
@@ -115,7 +119,7 @@ function getOptions(
     const selection = selections?.find(selection => selection.name.value === association);
     const associationArgs = args && args[association];
 
-    if (!selection && !associationArgs) {
+    if ((isCountQuery || !selection )&& !associationArgs) {
       continue;
     }
     const model = entity.associations[association].target;
@@ -139,12 +143,15 @@ function getOptions(
         isRaw,
         distinctObj,
         !!entity.associations[association].options.through,
+        isCountQuery
       ),
     );
   }
 
   const options: IncludeOptions = includeOptions || {};
-  options.attributes = attributes;
+  if (!isCountQuery) {
+    options.attributes = attributes;
+  }
   options.where = where;
   options.include = include;
 
@@ -159,6 +166,7 @@ export async function getFindOptions<T extends Model<T>>(
   entity: ModelType<T>,
   args: any,
   fieldNode,
+  isCountQuery = false,
 ): Promise<FindOptions> {
   const isRaw = !!(args?.group || args?.distinct);
   const options: FindAndCountOptions = getOptions(
@@ -169,6 +177,8 @@ export async function getFindOptions<T extends Model<T>>(
     null,
     isRaw,
     { distinct: args?.distinct },
+    false,
+    isCountQuery
   );
   options.limit = args.limit;
   options.offset = args.offset;
@@ -177,6 +187,9 @@ export async function getFindOptions<T extends Model<T>>(
   options.raw = isRaw;
   options.mapToModel = isRaw;
   options.nest = isRaw;
+  if (isCountQuery) {
+    return options;
+  }
   const order = [];
   if (args.order && args.order.length) {
     for (const orderItem of args.order) {
@@ -196,7 +209,9 @@ export async function findAndCountAll<T extends Model<T>>(
   count: number;
 }> {
   const fieldNode = info.fieldNodes[0].selectionSet.selections[0];
-  return entity.findAndCountAll(await getFindOptions(entity, args, fieldNode));
+  const findAllOptions = await getFindOptions(entity, args, fieldNode);
+  const countOptions = await getFindOptions(entity, args, fieldNode, true);
+  return { rows: await entity.findAll(findAllOptions), count: await entity.count(countOptions) };
 }
 
 export async function findAll<T extends Model<T>>(entity: ModelType<T>, args: any, info): Promise<T[]> {
