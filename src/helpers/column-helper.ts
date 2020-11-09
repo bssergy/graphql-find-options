@@ -2,6 +2,7 @@ import { Model, Op, WhereOperators, WhereValue, col } from 'sequelize';
 import { Col } from 'sequelize/types/lib/utils';
 import { ModelType } from '../models/model-type';
 import { PlainWhere } from '../models/plain-where';
+import { JoinContainer } from '../decorators/join-container';
 
 export function getAs<T extends Model<T>>(entity: ModelType<T>, as?: string, parentAs?: string): string {
   return as && parentAs ? `${parentAs}->${as}` : as ? as : entity.name;
@@ -30,6 +31,34 @@ function getFieldData<T extends Model<T>>(entity: ModelType<T>, as?: string, par
     })();
   }
   return fieldData;
+}
+
+function getAssociationData<T extends Model<T>>(entity: ModelType<T>, as?: string): any {
+  const associationData: any = {};
+  for (const associationName of Object.keys(entity.associations)) {
+    associationData['name'] = associationName;
+    associationData
+    const association = entity.associations[associationName];
+    (() => {
+      var associationTarget = association.target;
+      var associationAs = association.as;
+      Object.defineProperty(associationData, associationName, {
+          get: function() {
+            JoinContainer.addJoin(associationTarget, as);
+            return getAssociationData(associationTarget, associationAs);
+          }
+      });
+    })();
+  }
+  return associationData;
+}
+
+export function leftJoin<T extends Model<T>>(
+  entity: ModelType<T>,
+  field: (object: T) => any,
+  as?: string
+): string {
+  return field(getAssociationData(entity, as));
 }
 
 export function getColumnName<T extends Model<T>>(

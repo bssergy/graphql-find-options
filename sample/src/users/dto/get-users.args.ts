@@ -22,6 +22,7 @@ export class GetUsersArgs {
       getColumn(User, user => user.firstName, alias),
       ' ',
       getColumn(User, user => user.lastName, alias),
+      getColumn(User, user => user.comment.id)
     ),
   )
   name: StringFilter;

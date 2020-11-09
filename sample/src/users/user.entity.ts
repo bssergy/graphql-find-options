@@ -1,5 +1,5 @@
 import { ObjectType, Field, Int } from '@nestjs/graphql';
-import { Table, Model, PrimaryKey, Column, AutoIncrement, HasMany } from 'sequelize-typescript';
+import { Table, Model, PrimaryKey, Column, AutoIncrement, HasMany, HasOne } from 'sequelize-typescript';
 import Comment from './comment.entity';
 
 @Table
@@ -30,4 +30,8 @@ export default class User extends Model<User> {
   @HasMany(() => Comment)
   @Field(() => [Comment], { nullable: true })
   comments?: Comment[];
+
+  @HasOne(() => Comment)
+  @Field(() => Comment, { nullable: true })
+  comment?: Comment;
 }

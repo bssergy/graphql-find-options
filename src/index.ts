@@ -12,6 +12,7 @@ import { FnContainer } from './decorators/fn-container';
 import { getArgumentValue, getParentAs, getColumnName } from './helpers/column-helper';
 import { ModelType } from './models/model-type';
 import { WhereContainer } from './decorators/where-container';
+import { JoinContainer } from './decorators/join-container';
 
 async function getOrderOptions(entity, order, orderOptions = [], orderItemModels = [], as?: string, parentAs?: string) {
   if (as) {
@@ -119,7 +120,7 @@ function getOptions(
     const selection = selections?.find(selection => selection.name.value === association);
     const associationArgs = args && args[association];
 
-    if ((isCountQuery || !selection )&& !associationArgs) {
+    if ((isCountQuery || !selection || !JoinContainer.hasJoin(entity.associations[association].target, parentAs)) && !associationArgs) {
       continue;
     }
     const model = entity.associations[association].target;
