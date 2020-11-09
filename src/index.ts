@@ -120,7 +120,7 @@ function getOptions(
     const selection = selections?.find(selection => selection.name.value === association);
     const associationArgs = args && args[association];
 
-    if ((isCountQuery || !selection || !JoinContainer.hasJoin(entity.associations[association].target, parentAs)) && !associationArgs) {
+    if (!JoinContainer.hasJoin(entity.associations[association].target, parentAs) && (isCountQuery || !selection) && !associationArgs) {
       continue;
     }
     const model = entity.associations[association].target;
