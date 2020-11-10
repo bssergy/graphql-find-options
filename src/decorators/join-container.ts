@@ -11,7 +11,7 @@ export class JoinContainer {
     values.add(target);
   }
 
-  public static hasJoin(target: Function, key: string): boolean {
+  public static hasJoin(target: Function, key: string = null): boolean {
     const values = this.data.get(key);
     if (values) {
       return values.has(target);
