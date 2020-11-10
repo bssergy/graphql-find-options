@@ -65,6 +65,7 @@ function getOptions(
   distinctObj?,
   hasThrough?,
   isCountQuery = false,
+  rootWhere?,
 ) {
   let attributes;
   if (!isCountQuery) {
@@ -92,22 +93,25 @@ function getOptions(
   }
 
   const where = {};
+  if (!rootWhere) {
+    rootWhere = where;
+  }
   if (args) {
     for (const argName of Object.keys(args)) {
       const argFn = FnContainer.getArgFunc(args.constructor, argName);
       if (argFn) {
-        if (!where[Op.and]) {
-          where[Op.and] = [];
+        if (!rootWhere[Op.and]) {
+          rootWhere[Op.and] = [];
         }
-        where[Op.and].push(whereFn(argFn(includeOptions?.as, parentAs), getArgumentValue(args[argName]) as LogicType));
+        rootWhere[Op.and].push(whereFn(argFn(includeOptions?.as, parentAs), getArgumentValue(args[argName]) as LogicType));
       } else {
         const whereArg = WhereContainer.getArgFunc(args.constructor, argName);
         if (whereArg) {
-          if (!where[Op.and]) {
-            where[Op.and] = [];
+          if (!rootWhere[Op.and]) {
+            rootWhere[Op.and] = [];
           }
 
-          where[Op.and].push(whereArg(args[argName], includeOptions?.as, parentAs));
+          rootWhere[Op.and].push(whereArg(args[argName], includeOptions?.as, parentAs));
         } else if (argName in entity.rawAttributes) {
           where[argName] = getArgumentValue(args[argName]);
         }
@@ -120,7 +124,7 @@ function getOptions(
     const selection = selections?.find(selection => selection.name.value === association);
     const associationArgs = args && args[association];
 
-    if (!JoinContainer.hasJoin(entity.associations[association].target, parentAs) && (isCountQuery || !selection) && !associationArgs) {
+    if (!JoinContainer.hasJoin(entity.associations[association].target, includeOptions?.as) && (isCountQuery || !selection) && !associationArgs) {
       continue;
     }
     const model = entity.associations[association].target;
@@ -144,7 +148,8 @@ function getOptions(
         isRaw,
         distinctObj,
         !!entity.associations[association].options.through,
-        isCountQuery
+        isCountQuery,
+        rootWhere
       ),
     );
   }
