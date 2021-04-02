@@ -19,6 +19,11 @@ async function getOrderOptions(entity, order, orderOptions = [], orderItemModels
     orderItemModels.push({ model: entity, as });
   }
   for (const field of Object.keys(order)) {
+    const whereFn = WhereContainer.getArgFunc(order.constructor, field);
+    if (whereFn) {
+      orderOptions.push(whereFn(order[field], as, parentAs));
+      continue;
+    }
     const argFn = FnContainer.getArgFunc(order.constructor, field);
     const orderItem =
       (argFn && (await argFn(as, parentAs))) || (Object.keys(entity.rawAttributes).includes(field) && field);
