@@ -1,6 +1,6 @@
 {
   "name": "graphql-find-options",
-  "version": "1.0.37",
+  "version": "1.0.38",
   "description": "Builds find options for Sequelize based on GraphQL query",
   "main": "lib/index.js",
   "scripts": {
@@ -21,7 +21,6 @@
     "sequelize": "^5.21.9",
     "typescript": "^3.9.2"
   },
-  "dependencies": {},
   "files": [
     "/lib"
   ]
