@@ -228,10 +228,8 @@ export async function findAndCountAll<T extends Model<T>>(
 export async function getCount<T extends Model<T>>(
   entity: ModelType<T>,
   args: any,
-  info,
 ): Promise<number> {
-  const fieldNode = info.fieldNodes[0].selectionSet.selections[0];
-  const countOptions = await getFindOptions(entity, args, fieldNode, true);
+  const countOptions = await getFindOptions(entity, args, { selectionSet: { selections: [] } }, true);
   return entity.count(countOptions);
 }
 
