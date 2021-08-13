@@ -71,6 +71,7 @@ function getOptions(
   hasThrough?,
   isCountQuery = false,
   rootWhere?,
+  defaultArgs?,
 ) {
   let attributes;
   if (!isCountQuery) {
@@ -123,11 +124,19 @@ function getOptions(
       }
     }
   }
+  if (defaultArgs) {
+    for (const argName of Object.keys(defaultArgs)) {
+      if (argName in entity.rawAttributes) {
+        where[argName] = getArgumentValue(defaultArgs[argName]);
+      }
+    }
+  }
 
   const include = [];
   for (const association of Object.keys(entity.associations)) {
     const selection = selections?.find(selection => selection.name.value === association);
     const associationArgs = args && args[association];
+    const defaultAssociationArgs = defaultArgs && defaultArgs[association];
 
     if (!JoinContainer.hasJoin(entity.associations[association].target, includeOptions?.as) && (isCountQuery || !selection) && !associationArgs) {
       continue;
@@ -154,7 +163,8 @@ function getOptions(
         distinctObj,
         !!entity.associations[association].options.through,
         isCountQuery,
-        rootWhere
+        rootWhere,
+        defaultAssociationArgs,
       ),
     );
   }
@@ -178,6 +188,7 @@ export async function getFindOptions<T extends Model<T>>(
   args: any,
   fieldNode,
   isCountQuery = false,
+  defaultArgs?,
 ): Promise<FindOptions> {
   const isRaw = !!(args?.group || args?.distinct);
   const options: FindAndCountOptions = getOptions(
@@ -189,7 +200,9 @@ export async function getFindOptions<T extends Model<T>>(
     isRaw,
     { distinct: args?.distinct },
     false,
-    isCountQuery
+    isCountQuery,
+    null,
+    defaultArgs,
   );
   options.limit = args.limit;
   options.offset = args.offset;
@@ -215,12 +228,13 @@ export async function findAndCountAll<T extends Model<T>>(
   entity: ModelType<T>,
   args: any,
   info,
+  defaultArgs?: any,
 ): Promise<{
   rows: (T & Model<unknown, unknown>)[];
   count: number;
 }> {
   const fieldNode = info.fieldNodes[0].selectionSet.selections[0];
-  const findAllOptions = await getFindOptions(entity, args, fieldNode);
+  const findAllOptions = await getFindOptions(entity, args, fieldNode, false, defaultArgs);
   const countOptions = await getFindOptions(entity, args, fieldNode, true);
   return { rows: await entity.findAll(findAllOptions), count: await entity.count(countOptions) };
 }
@@ -233,14 +247,14 @@ export async function getCount<T extends Model<T>>(
   return entity.count(countOptions);
 }
 
-export async function findAll<T extends Model<T>>(entity: ModelType<T>, args: any, info): Promise<T[]> {
+export async function findAll<T extends Model<T>>(entity: ModelType<T>, args: any, info: any, defaultArgs?: any): Promise<T[]> {
   const fieldNode = info.fieldNodes[0];
-  return entity.findAll(await getFindOptions(entity, args, fieldNode));
+  return entity.findAll(await getFindOptions(entity, args, fieldNode, false, defaultArgs));
 }
 
-export async function findOne<T extends Model<T>>(entity: ModelType<T>, args: any, info): Promise<T | null> {
+export async function findOne<T extends Model<T>>(entity: ModelType<T>, args: any, info: any, defaultArgs?: any): Promise<T | null> {
   const fieldNode = info.fieldNodes[0];
-  return entity.findOne(await getFindOptions(entity, args, fieldNode));
+  return entity.findOne(await getFindOptions(entity, args, fieldNode, false, defaultArgs));
 }
 
 export async function getFindOptionsForNested<P extends Model<P>, T extends Model<T>>(
