@@ -124,10 +124,10 @@ function getOptions(
       }
     }
   }
-  if (defaultArgs) {
+  if (defaultArgs?.where) {
     for (const argName of Object.keys(defaultArgs.where)) {
       if (argName in entity.rawAttributes) {
-        where[argName] = getArgumentValue(defaultArgs[argName]);
+        where[argName] = getArgumentValue(defaultArgs.where[argName]);
       }
     }
   }
