@@ -149,7 +149,7 @@ function getOptions(
 
     const assosiationInclude = {
       model: model,
-      required: (defaultAssociationArgs?.options.required !== null || typeof defaultAssociationArgs?.options.required !== 'undefined') ? defaultAssociationArgs?.options.required : !!associationArgs,
+      required: (defaultAssociationArgs?.options?.required !== null && typeof defaultAssociationArgs?.options?.required !== 'undefined') ? defaultAssociationArgs?.options.required : !!associationArgs,
       as: entity.associations[association].as,
     };
     include.push(
