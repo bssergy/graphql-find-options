@@ -125,7 +125,7 @@ function getOptions(
     }
   }
   if (defaultArgs) {
-    for (const argName of Object.keys(defaultArgs)) {
+    for (const argName of Object.keys(defaultArgs.where)) {
       if (argName in entity.rawAttributes) {
         where[argName] = getArgumentValue(defaultArgs[argName]);
       }
@@ -136,7 +136,7 @@ function getOptions(
   for (const association of Object.keys(entity.associations)) {
     const selection = selections?.find(selection => selection.name.value === association);
     const associationArgs = args && args[association];
-    const defaultAssociationArgs = defaultArgs && defaultArgs[association];
+    const defaultAssociationArgs = defaultArgs?.where?.[association];
 
     if (!JoinContainer.hasJoin(entity.associations[association].target, includeOptions?.as) && (isCountQuery || !selection) && !associationArgs) {
       continue;
@@ -149,7 +149,7 @@ function getOptions(
 
     const assosiationInclude = {
       model: model,
-      required: !!associationArgs,
+      required: (defaultAssociationArgs?.options.required !== null || typeof defaultAssociationArgs?.options.required !== 'undefined') ? defaultAssociationArgs?.options.required : !!associationArgs,
       as: entity.associations[association].as,
     };
     include.push(
