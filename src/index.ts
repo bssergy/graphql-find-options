@@ -235,7 +235,7 @@ export async function findAndCountAll<T extends Model<T>>(
 }> {
   const fieldNode = info.fieldNodes[0].selectionSet.selections[0];
   const findAllOptions = await getFindOptions(entity, args, fieldNode, false, defaultArgs);
-  const countOptions = await getFindOptions(entity, args, fieldNode, true);
+  const countOptions = await getFindOptions(entity, args, fieldNode, true, defaultArgs);
   return { rows: await entity.findAll(findAllOptions), count: await entity.count(countOptions) };
 }
 
